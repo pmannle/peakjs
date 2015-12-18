@@ -1,0 +1,24 @@
+{
+  "name": "peaksjs",
+  "version": "0.0.0",
+  "homepage": "https://github.com/pmannle/phatcast",
+  "description": "phastcast version of peaks.js - use 'npm run build' to create peaks.min.js",
+  "main": "index.js",
+  "keywords": [
+    "peaks.js",
+    "phatcast"
+  ],
+  "authors": [
+    "bbc peaks.js team",
+    "phil mannle"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "client/bower_components",
+    "test",
+    "tests"
+  ]
+}
