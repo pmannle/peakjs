@@ -68,6 +68,12 @@ define(['konva'], function (Konva) {
       text.hide();
       group.label = text;
 
+      var imageObj = new Image();
+
+
+
+      imageObj.src = 'http://konvajs.github.io/assets/yoda.jpg';
+
       var handle = new Konva.Rect({
         width: handleWidth,
         height: handleHeight,
@@ -75,7 +81,8 @@ define(['konva'], function (Konva) {
         stroke: color,
         strokeWidth: 1,
         x: handleX,
-        y: handleY
+        y: handleY,
+        fillPatternImage: imageObj
       });
 
       /*

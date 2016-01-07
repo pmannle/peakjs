@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "homepage": "https://github.com/pmannle/phatcast",
   "description": "phatcast version of peaks.js - use 'npm run build' to create peaks.min.js",
-  "main": "peaks.min.js",
+  "main": "peaks.js",
   "keywords": [
     "peaks.js",
     "phatcast"
