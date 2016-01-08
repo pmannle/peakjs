@@ -17793,6 +17793,7 @@ var extend = function (to, from) {
 var ee = EventEmitter.EventEmitter2 || EventEmitter;
 function Peaks(container) {
     ee.call(this, { wildcard: true });
+    // adding option for height of overview container as percentage of zoom view container
     this.options = {
         zoomLevels: [
             512,
@@ -17830,7 +17831,9 @@ function Peaks(container) {
             scale: 512,
             scale_adjuster: 127
         },
-        zoomAdapter: 'animated'
+        zoomAdapter: 'animated',
+        overviewHeight: 3 // take the zoom view and devide by this number to get WaveformOverview height
+
     };
     this.container = container;
     this.currentZoomLevel = 0;
@@ -18227,7 +18230,7 @@ module.exports = function (peaks) {
         if (!view.segmentLayer) {
             view.segmentLayer = new Konva.Layer();
             view.stage.add(view.segmentLayer);
-            view.segmentLayer.moveToTop();
+            //view.segmentLayer.moveToTop();
         }
         return view;
     });
@@ -18237,7 +18240,7 @@ module.exports = function (peaks) {
                 startTime: startTime,
                 endTime: endTime,
                 labelText: labelText || '',
-                color: color || getSegmentColor(),
+                //color: color || getSegmentColor(),
                 editable: editable
             };
         var segmentZoomGroup = new Konva.Group();
@@ -18257,6 +18260,12 @@ module.exports = function (peaks) {
         segmentGroups.forEach(function (segmentGroup, i) {
             var view = self.views[i];
             segmentGroup.waveformShape = SegmentShape.createShape(segment, view);
+
+            // add gradient - phil
+            segmentGroup.waveformShape.fillLinearGradientStartPoint({ x : 0, y : -50});
+            segmentGroup.waveformShape.fillLinearGradientEndPoint({ x : 1140, y : 50});
+            segmentGroup.waveformShape.fillLinearGradientColorStops([0, 'red', 1, 'orange']);
+
             segmentGroup.waveformShape.on('mouseenter', menter);
             segmentGroup.waveformShape.on('mouseleave', mleave);
             segmentGroup.add(segmentGroup.waveformShape);
@@ -18528,9 +18537,11 @@ function WaveformOverview(waveformData, container, peaks) {
     var that = this;
     that.peaks = peaks;
     that.options = peaks.options;
+
     that.data = waveformData;
     that.width = container.clientWidth;
-    that.height = container.clientHeight || that.options.height;
+    // make overview half the height of the zoom view - phil
+    that.height = container.clientHeight/that.options.overviewHeight || that.options.height/that.options.overviewHeight;
     that.frameOffset = 0;
     that.stage = new Konva.Stage({
         container: container,
@@ -18600,13 +18611,13 @@ WaveformOverview.prototype.createRefWaveform = function () {
     this.refLayer = new Konva.Layer();
     this.refWaveformRect = new Konva.Rect({
         x: 0,
-        y: 11,
+        y: 0,
         width: 0,
         stroke: that.options.overviewHighlightRectangleColor,
         strokeWidth: 1,
-        height: this.height - 11 * 2,
+        height: this.height, //  - 11 * 2, // make highlight bar same hight as overview track - phil
         fill: that.options.overviewHighlightRectangleColor,
-        opacity: 0.3,
+        opacity: 0.4, // -phil
         cornerRadius: 2
     });
     this.refLayer.add(this.refWaveformRect);
@@ -18777,7 +18788,10 @@ function WaveformZoomView(waveformData, container, peaks) {
 WaveformZoomView.prototype.createZoomWaveform = function () {
     var that = this;
     that.zoomWaveformShape = new Konva.Shape({
-        fill: that.options.zoomWaveformColor,
+        //fill: that.options.zoomWaveformColor,
+      fillLinearGradientStartPoint: { x : 0, y : -50},
+      fillLinearGradientEndPoint: { x : 1140, y : 50},
+      fillLinearGradientColorStops: [0, 'lightgray', 1, 'darkgray'],
         strokeWidth: 0
     });
     that.zoomWaveformShape.sceneFunc(mixins.waveformDrawFunction.bind(that.zoomWaveformShape, that));
@@ -18882,6 +18896,7 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
         that.zoomPlayheadGroup.hide();
     }
     that.uiLayer.draw();
+    that.uiLayer.moveToTop();
 };
 WaveformZoomView.prototype.seekFrame = function (pixelIndex, offset) {
     if (isNaN(pixelIndex))
@@ -19187,12 +19202,14 @@ module.exports = function (peaks) {
 },{"peaks/markers/waveform.points":18,"peaks/markers/waveform.segments":19,"peaks/views/waveform.overview":22,"peaks/views/waveform.zoomview":23,"waveform-data":14}],28:[function(require,module,exports){
 var Konva = require('konva');
 'use strict';
-var createHandle = function (height, color, inMarker) {
+var createHandle = function (height, color, inMarker, overviewHeight) {
 
     return function (draggable, segment, parent, onDrag) {
         var handleHeight = 30;
         var handleWidth = handleHeight / 2;
-        var handleY = height / 2 - 10.5;
+      // phil
+      if (true) { var handleY = (height / 2 - 10.5)/overviewHeight; }
+      else { var handleY = (height / 2 - 10.5) }
         var handleX = inMarker ? -handleWidth + 0.5 : 0.5;
         var group = new Konva.Group({
                 draggable: draggable,
@@ -19220,13 +19237,14 @@ var createHandle = function (height, color, inMarker) {
                 x: xPosition,
                 y: height / 2 - 5,
                 text: '',
-                fontSize: 10,
+                fontSize: 14,
                 fontFamily: 'sans-serif',
                 fill: '#000',
                 textAlign: 'center'
             });
         text.hide();
         group.label = text;
+
 
       var handle = new Konva.Rect({
         width: handleWidth,
@@ -19240,7 +19258,7 @@ var createHandle = function (height, color, inMarker) {
       });
 
 
-      var gripGraphic = new Konva.Image.fromURL('/assets/handleGraphic.png', function(gripGraphic){
+      var gripGraphic = new Konva.Image.fromURL('/assets/handleGraphic.svg', function(gripGraphic){
         // image is Konva.Image instance
         gripGraphic.x(handleX);
         gripGraphic.y(handleY);
@@ -19255,7 +19273,7 @@ var createHandle = function (height, color, inMarker) {
 
         var line = new Konva.Line({
                 points: [
-                    0.5,
+                    0,
                     0,
                     0.5,
                     height
@@ -19337,7 +19355,7 @@ function createPointHandle(height, color) {
                     height
                 ],
                 stroke: color,
-                strokeWidth: 1,
+                strokeWidth: 2,
                 x: handleX,
                 y: 0
             });
@@ -19345,10 +19363,12 @@ function createPointHandle(height, color) {
             text.show();
             text.setX(xPosition - text.getWidth());
             point.view.pointLayer.draw();
+            document.body.style.cursor = 'pointer';
         });
         handle.on('mouseout', function (event) {
             text.hide();
             point.view.pointLayer.draw();
+            document.body.style.cursor = 'default';
         });
         group.add(handle);
         group.add(line);
@@ -19418,10 +19438,12 @@ module.exports = {
         return result;
     },
     defaultInMarker: function (options) {
-        return createHandle(options.height, options.outMarkerColor, true);
+      // -phil
+        return createHandle(options.height, options.outMarkerColor, true, options.overviewHeight);
     },
     defaultOutMarker: function (options) {
-        return createHandle(options.height, options.outMarkerColor, false);
+      // -phil
+        return createHandle(options.height, options.outMarkerColor, false, options.overviewHeight);
     },
     defaultPointMarker: function (options) {
         return createPointHandle(options.height, options.pointMarkerColor);
@@ -19432,7 +19454,7 @@ module.exports = {
                 x: 12,
                 y: 12,
                 text: parent.labelText,
-                fontSize: 12,
+                fontSize: 14,
                 fontFamily: 'Arial, sans-serif',
                 fill: '#000',
                 textAlign: 'center'
