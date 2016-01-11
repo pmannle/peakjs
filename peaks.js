@@ -17794,6 +17794,8 @@ var ee = EventEmitter.EventEmitter2 || EventEmitter;
 function Peaks(container) {
     ee.call(this, { wildcard: true });
     // adding option for height of overview container as percentage of zoom view container
+
+    // begin of peaks options - phil
     this.options = {
         zoomLevels: [
             512,
@@ -17832,7 +17834,8 @@ function Peaks(container) {
             scale_adjuster: 127
         },
         zoomAdapter: 'animated',
-        overviewHeight: 3 // take the zoom view and devide by this number to get WaveformOverview height
+        zoomWaveformHeight: 100,
+        overviewWaveformHeight: 50
 
     };
     this.container = container;
@@ -18082,7 +18085,8 @@ WaveShape.createShape = function createShape(segmentData, view) {
     var shape = new Konva.Shape({
             fill: segmentData.color,
             strokeWidth: 0,
-            opacity: 1
+            opacity: 1,
+            height: view.height
         });
     shape.sceneFunc(WaveShape.drawFunc.bind(shape, view, segmentData.id));
     return shape;
@@ -18106,6 +18110,12 @@ module.exports = function (peaks) {
     var self = this;
     var waveformView = peaks.waveform;
     self.points = [];
+
+
+  // add different heights - phil
+    waveformView.waveformZoomView.height = 200;
+    waveformView.waveformOverview.height= 100;
+
     self.views = [
         waveformView.waveformZoomView,
         waveformView.waveformOverview
@@ -18230,7 +18240,7 @@ module.exports = function (peaks) {
         if (!view.segmentLayer) {
             view.segmentLayer = new Konva.Layer();
             view.stage.add(view.segmentLayer);
-            //view.segmentLayer.moveToTop();
+            view.segmentLayer.moveToTop();
         }
         return view;
     });
@@ -18261,9 +18271,12 @@ module.exports = function (peaks) {
             var view = self.views[i];
             segmentGroup.waveformShape = SegmentShape.createShape(segment, view);
 
+            var gradientStartY = view.height/4;
+            var gradientEndY = view.height/2;
+
             // add gradient - phil
-            segmentGroup.waveformShape.fillLinearGradientStartPoint({ x : 0, y : -50});
-            segmentGroup.waveformShape.fillLinearGradientEndPoint({ x : 1140, y : 50});
+            segmentGroup.waveformShape.fillLinearGradientStartPoint({ x : 0, y : gradientStartY});
+            segmentGroup.waveformShape.fillLinearGradientEndPoint({ x : 0, y : gradientEndY});
             segmentGroup.waveformShape.fillLinearGradientColorStops([0, 'red', 1, 'orange']);
 
             segmentGroup.waveformShape.on('mouseenter', menter);
@@ -18273,9 +18286,9 @@ module.exports = function (peaks) {
             segmentGroup.add(segmentGroup.label.hide());
             if (editable) {
                 var draggable = true;
-                segmentGroup.inMarker = new peaks.options.segmentInMarker(draggable, segmentGroup, segment, segmentHandleDrag);
+                segmentGroup.inMarker = new peaks.options.segmentInMarker(draggable, segmentGroup, segment, segmentHandleDrag, view.height);
                 segmentGroup.add(segmentGroup.inMarker);
-                segmentGroup.outMarker = new peaks.options.segmentOutMarker(draggable, segmentGroup, segment, segmentHandleDrag);
+                segmentGroup.outMarker = new peaks.options.segmentOutMarker(draggable, segmentGroup, segment, segmentHandleDrag, view.height);
                 segmentGroup.add(segmentGroup.outMarker);
             }
             view.segmentLayer.add(segmentGroup);
@@ -18541,7 +18554,7 @@ function WaveformOverview(waveformData, container, peaks) {
     that.data = waveformData;
     that.width = container.clientWidth;
     // make overview half the height of the zoom view - phil
-    that.height = container.clientHeight/that.options.overviewHeight || that.options.height/that.options.overviewHeight;
+    that.height = that.options.zoomWaveformHeight || 100;
     that.frameOffset = 0;
     that.stage = new Konva.Stage({
         container: container,
@@ -18681,7 +18694,7 @@ function WaveformZoomView(waveformData, container, peaks) {
     that.pixelLength = that.data.adapter.length;
     that.frameOffset = 0;
     that.width = container.clientWidth;
-    that.height = container.clientHeight || that.options.height;
+    that.height = container.clientHeight || that.options.zoomWaveformHeight;
     that.data.offset(that.frameOffset, that.frameOffset + that.width);
     that.stage = new Konva.Stage({
         container: container,
@@ -18788,10 +18801,10 @@ function WaveformZoomView(waveformData, container, peaks) {
 WaveformZoomView.prototype.createZoomWaveform = function () {
     var that = this;
     that.zoomWaveformShape = new Konva.Shape({
-        //fill: that.options.zoomWaveformColor,
-      fillLinearGradientStartPoint: { x : 0, y : -50},
-      fillLinearGradientEndPoint: { x : 1140, y : 50},
-      fillLinearGradientColorStops: [0, 'lightgray', 1, 'darkgray'],
+        //fill: that.options.zoomWaveformColor -phil
+      fillLinearGradientStartPoint: { x : 0, y : 50},
+      fillLinearGradientEndPoint: { x : 0, y : 100},
+      fillLinearGradientColorStops: [0, 'cornflowerblue', 1, 'darkgray'],
         strokeWidth: 0
     });
     that.zoomWaveformShape.sceneFunc(mixins.waveformDrawFunction.bind(that.zoomWaveformShape, that));
@@ -19202,14 +19215,13 @@ module.exports = function (peaks) {
 },{"peaks/markers/waveform.points":18,"peaks/markers/waveform.segments":19,"peaks/views/waveform.overview":22,"peaks/views/waveform.zoomview":23,"waveform-data":14}],28:[function(require,module,exports){
 var Konva = require('konva');
 'use strict';
-var createHandle = function (height, color, inMarker, overviewHeight) {
+var createHandle = function (color, inMarker) {
 
-    return function (draggable, segment, parent, onDrag) {
+    return function (draggable, segment, parent, onDrag, viewHeight) {
         var handleHeight = 30;
         var handleWidth = handleHeight / 2;
-      // phil
-      if (true) { var handleY = (height / 2 - 10.5)/overviewHeight; }
-      else { var handleY = (height / 2 - 10.5) }
+        // phil
+        var handleY = (viewHeight / 2 - 15);
         var handleX = inMarker ? -handleWidth + 0.5 : 0.5;
         var group = new Konva.Group({
                 draggable: draggable,
@@ -19235,7 +19247,7 @@ var createHandle = function (height, color, inMarker, overviewHeight) {
         var xPosition = inMarker ? -24 : 24;
         var text = new Konva.Text({
                 x: xPosition,
-                y: height / 2 - 5,
+                y: viewHeight / 2 - 5,
                 text: '',
                 fontSize: 14,
                 fontFamily: 'sans-serif',
@@ -19276,7 +19288,7 @@ var createHandle = function (height, color, inMarker, overviewHeight) {
                     0,
                     0,
                     0.5,
-                    height
+                    viewHeight
                 ],
                 strokeWidth: 1,
                 stroke: color,
@@ -19439,11 +19451,11 @@ module.exports = {
     },
     defaultInMarker: function (options) {
       // -phil
-        return createHandle(options.height, options.outMarkerColor, true, options.overviewHeight);
+        return createHandle(options.outMarkerColor, true);
     },
     defaultOutMarker: function (options) {
       // -phil
-        return createHandle(options.height, options.outMarkerColor, false, options.overviewHeight);
+        return createHandle(options.outMarkerColor, false);
     },
     defaultPointMarker: function (options) {
         return createPointHandle(options.height, options.pointMarkerColor);
