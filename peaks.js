@@ -16981,10 +16981,11 @@ WaveformData.prototype = {
    * @param {String*} identifier Unique identifier. If nothing is specified, *default* will be used as a value.
    * @return {WaveformDataSegment}
    */
-  set_segment: function setSegment(start, end, identifier){
+  set_segment: function setSegment(start, end, identifier, highlighted){
     identifier = identifier || "default";
 
     this.segments[identifier] = new WaveformDataSegment(this, start, end);
+    this.segments[identifier].highlighted = highlighted;
 
     return this.segments[identifier];
   },
@@ -17814,7 +17815,7 @@ function Peaks(container) {
         overviewWaveformColor: 'rgba(0,0,0,0.2)',
         overviewHighlightRectangleColor: 'grey',
         randomizeSegmentColor: true,
-        height: 200,
+        //height: 200,
         segmentColor: 'rgba(255, 161, 39, 1)',
         playheadColor: 'rgba(0, 0, 0, 1)',
         playheadTextColor: '#aaa',
@@ -17834,8 +17835,8 @@ function Peaks(container) {
             scale_adjuster: 127
         },
         zoomAdapter: 'animated',
-        zoomWaveformHeight: 100,
-        overviewWaveformHeight: 50
+        zoomWaveformHeight: 200,
+        overviewWaveformHeight: 100
 
     };
     this.container = container;
@@ -17914,7 +17915,8 @@ Peaks.prototype = Object.create(ee.prototype, {
                             endTime: endTime,
                             editable: editable,
                             color: color,
-                            labelText: labelText
+                            labelText: labelText,
+                            highlights: false
                         }];
                 }
                 if (Array.isArray(segments)) {
@@ -18113,8 +18115,8 @@ module.exports = function (peaks) {
 
 
   // add different heights - phil
-    waveformView.waveformZoomView.height = 200;
-    waveformView.waveformOverview.height= 100;
+    waveformView.waveformZoomView.height = peaks.options.zoomWaveformHeight;
+    waveformView.waveformOverview.height= peaks.options.overviewWaveformHeight;
 
     self.views = [
         waveformView.waveformZoomView,
@@ -18297,11 +18299,18 @@ module.exports = function (peaks) {
         segment.zoom.view = peaks.waveform.waveformZoomView;
         segment.overview = segmentOverviewGroup;
         segment.overview.view = peaks.waveform.waveformOverview;
-        return segment;
+
+      return segment;
     };
     var updateSegmentWaveform = function (segment) {
-        peaks.waveform.waveformOverview.data.set_segment(peaks.waveform.waveformOverview.data.at_time(segment.startTime), peaks.waveform.waveformOverview.data.at_time(segment.endTime), segment.id);
-        peaks.waveform.waveformZoomView.data.set_segment(peaks.waveform.waveformZoomView.data.at_time(segment.startTime), peaks.waveform.waveformZoomView.data.at_time(segment.endTime), segment.id);
+
+      var highlighted;
+      if (_.isUndefined(peaks.waveform.waveformOverview.data.segments[segment.id])) {
+        highlighted = false;
+      } else { highlighted = peaks.waveform.waveformOverview.data.segments[segment.id].highlighted }
+
+        peaks.waveform.waveformOverview.data.set_segment(peaks.waveform.waveformOverview.data.at_time(segment.startTime), peaks.waveform.waveformOverview.data.at_time(segment.endTime), segment.id, highlighted);
+        peaks.waveform.waveformZoomView.data.set_segment(peaks.waveform.waveformZoomView.data.at_time(segment.startTime), peaks.waveform.waveformZoomView.data.at_time(segment.endTime), segment.id, highlighted);
         var overviewStartOffset = peaks.waveform.waveformOverview.data.at_time(segment.startTime);
         var overviewEndOffset = peaks.waveform.waveformOverview.data.at_time(segment.endTime);
         segment.overview.setWidth(overviewEndOffset - overviewStartOffset);
@@ -18384,6 +18393,7 @@ module.exports = function (peaks) {
             throw new RangeError('[waveform.segments.createSegment] endTime should be higher than startTime');
         }
         var segment = createSegmentWaveform(segmentId, startTime, endTime, editable, color, labelText);
+        segment.highlighted = false // trigger for showing segment in angular - phil
         updateSegmentWaveform(segment);
         self.segments.push(segment);
         return segment;
@@ -18554,12 +18564,12 @@ function WaveformOverview(waveformData, container, peaks) {
     that.data = waveformData;
     that.width = container.clientWidth;
     // make overview half the height of the zoom view - phil
-    that.height = that.options.zoomWaveformHeight || 100;
+    that.height = that.options.overviewWaveformHeight;
     that.frameOffset = 0;
     that.stage = new Konva.Stage({
         container: container,
         width: that.width,
-        height: that.height
+        height: that.height // 50
     });
     that.waveformLayer = new Konva.Layer();
     that.background = new Konva.Rect({
@@ -18628,7 +18638,7 @@ WaveformOverview.prototype.createRefWaveform = function () {
         width: 0,
         stroke: that.options.overviewHighlightRectangleColor,
         strokeWidth: 1,
-        height: this.height, //  - 11 * 2, // make highlight bar same hight as overview track - phil
+        height: this.options.overviewWaveformHeight, //  - 11 * 2, // make highlight bar same hight as overview track - phil
         fill: that.options.overviewHighlightRectangleColor,
         opacity: 0.4, // -phil
         cornerRadius: 2
@@ -18905,6 +18915,26 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
         var remPixels = that.playheadPixel - that.frameOffset;
         that.zoomPlayheadGroup.show().setAttr('x', remPixels);
         that.zoomPlayheadText.setText(mixins.niceTime(that.data.time(that.playheadPixel), false));
+      // check if we are over a segment
+      _.forEach(that.data.segments, function(segment, key) {
+        var playheadPixel = that.playheadPixel;
+
+        // is the playHead over a segment?
+        if (((playheadPixel > segment.start) && (playheadPixel < segment.end)) && (segment.highlighted === false)) {
+          that.peaks.emit('segments.startHighlight', segment);
+          console.log('event: startHighlight' + key);
+          that.peaks.waveform.waveformOverview.data.segments[key].highlighted = true;
+          segment.highlighted = true;
+
+        } else if (((playheadPixel < segment.start) || (playheadPixel > segment.end)) && (segment.highlighted === true)) {
+          that.peaks.emit('segments.endHighlight', segment);
+          console.log('event: endHighlight' + key);
+          that.peaks.waveform.waveformOverview.data.segments[key].highlighted = false;
+          segment.highlighted = false;
+
+
+        }
+      })
     } else {
         that.zoomPlayheadGroup.hide();
     }
