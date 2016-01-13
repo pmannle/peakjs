@@ -17967,6 +17967,7 @@ Peaks.prototype = Object.create(ee.prototype, {
                     self.waveform.segments.removeAll();
                 },
                 getSegments: function () {
+
                     return self.waveform.segments.segments;
                 }
             };
@@ -18393,7 +18394,7 @@ module.exports = function (peaks) {
             throw new RangeError('[waveform.segments.createSegment] endTime should be higher than startTime');
         }
         var segment = createSegmentWaveform(segmentId, startTime, endTime, editable, color, labelText);
-        segment.highlighted = false // trigger for showing segment in angular - phil
+        //segment.highlighted = false // trigger for showing segment in angular - phil
         updateSegmentWaveform(segment);
         self.segments.push(segment);
         return segment;
@@ -18916,23 +18917,35 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
         that.zoomPlayheadGroup.show().setAttr('x', remPixels);
         that.zoomPlayheadText.setText(mixins.niceTime(that.data.time(that.playheadPixel), false));
       // check if we are over a segment
+
       _.forEach(that.data.segments, function(segment, key) {
+
         var playheadPixel = that.playheadPixel;
 
         // is the playHead over a segment?
         if (((playheadPixel > segment.start) && (playheadPixel < segment.end)) && (segment.highlighted === false)) {
-          that.peaks.emit('segments.startHighlight', segment);
-          console.log('event: startHighlight' + key);
+          //console.log('event: startHighlight' + key);
           that.peaks.waveform.waveformOverview.data.segments[key].highlighted = true;
+          (that.peaks.waveform.segments.segments).forEach(function(segment, index) {
+            if (that.peaks.waveform.segments.segments[index].id == key) {
+              that.peaks.waveform.segments.segments[index].highlighted = true
+            }
+          });
           segment.highlighted = true;
 
+          that.peaks.emit('segments.startHighlight', segment);
+
         } else if (((playheadPixel < segment.start) || (playheadPixel > segment.end)) && (segment.highlighted === true)) {
-          that.peaks.emit('segments.endHighlight', segment);
-          console.log('event: endHighlight' + key);
+          //console.log('event: endHighlight' + key);
           that.peaks.waveform.waveformOverview.data.segments[key].highlighted = false;
+          (that.peaks.waveform.segments.segments).forEach(function(segment, index) {
+            if (that.peaks.waveform.segments.segments[index].id == key) {
+              that.peaks.waveform.segments.segments[index].highlighted = false
+            }
+          });
           segment.highlighted = false;
 
-
+          that.peaks.emit('segments.endHighlight', segment)
         }
       })
     } else {
