@@ -17845,18 +17845,18 @@ function Peaks(container) {
 }
 Peaks.init = function init(opts) {
     opts = opts || {};
-    if (opts.audioElement) {
-        opts.mediaElement = opts.audioElement;
-        if (console && typeof console.log === 'function') {
-            console.log('[Peaks.init] `audioElement` option is deprecated. Please use `mediaElement` instead.');
-        }
-    }
-    if (!opts.mediaElement) {
-        throw new Error('[Peaks.init] Please provide an audio element.');
-    }
-    if (!(opts.mediaElement instanceof HTMLMediaElement)) {
-        throw new TypeError('[Peaks.init] The mediaElement option should be an HTMLMediaElement.');
-    }
+    //if (opts.audioElement) {
+    //    opts.mediaElement = opts.audioElement;
+    //    if (console && typeof console.log === 'function') {
+    //        console.log('[Peaks.init] `audioElement` option is deprecated. Please use `mediaElement` instead.');
+    //    }
+    //}
+    //if (!opts.mediaElement) {
+    //    throw new Error('[Peaks.init] Please provide an audio element.');
+    //}
+    //if (!(opts.mediaElement instanceof HTMLMediaElement)) {
+    //    throw new TypeError('[Peaks.init] The mediaElement option should be an HTMLMediaElement.');
+    //}
     if (!opts.container) {
         throw new Error('[Peaks.init] Please provide a container object.');
     }
@@ -17878,17 +17878,17 @@ Peaks.init = function init(opts) {
         instance.logger = opts.logger;
     }
     instance.on('error', instance.logger.bind(null));
-    if (typeof instance.options.template === 'string') {
-        instance.container.innerHTML = instance.options.template;
-    } else if (instance.options.template instanceof HTMLElement) {
-        instance.container.appendChild(instance.options.template);
-    } else {
-        throw new TypeError('Please ensure you provide an HTML string or a DOM template as `template` instance option. Provided: ' + instance.options.template);
-    }
+    //if (typeof instance.options.template === 'string') {
+    //    instance.container.innerHTML = instance.options.template;
+    //} else if (instance.options.template instanceof HTMLElement) {
+    //    instance.container.appendChild(instance.options.template);
+    //} else {
+    //    throw new TypeError('Please ensure you provide an HTML string or a DOM template as `template` instance option. Provided: ' + instance.options.template);
+    //}
     if (instance.options.keyboard)
         keyboard.init(instance);
-    instance.player = new AudioPlayer(instance);
-    instance.player.init(instance.options.mediaElement);
+    instance.player = new AudioPlayer(instance.options.HTMLMediaElement);
+    instance.player.init(instance.options.HTMLMediaElement, instance.options.mediaPlayer, instance);
     instance.waveform = new Waveform(instance);
     instance.waveform.init(buildUi(instance.container));
     instance.seeking = false;
@@ -18435,42 +18435,65 @@ var radio = function (peaks) {
         return time * (percentage / 100);
     }
     return {
-        init: function (mediaElement) {
+        init: function (mediaElement, audio, peaks) {
             var that = this;
+          //var that = mediaElement;
+
             this.mediaElement = mediaElement;
-            this.duration = this.mediaElement.duration;
-            if (this.mediaElement.readyState === 4) {
-                peaks.emit('player_load', that);
-            }
-            this.mediaElement.addEventListener('timeupdate', function () {
-                peaks.emit('player_time_update', that.getTime());
-            });
-            this.mediaElement.addEventListener('play', function () {
-                peaks.emit('player_play', that.getTime());
-            });
-            this.mediaElement.addEventListener('pause', function () {
-                peaks.emit('player_pause', that.getTime());
-            });
-            this.mediaElement.addEventListener('seeked', function () {
-                peaks.emit('player_seek', that.getTime());
-            });
+          //  //this.duration = this.mediaElement.duration;
+          //  //if (this.mediaElement.readyState === 4) {
+          //  //    peaks.emit('player_load', that);
+          //  //}
+          //  this.mediaElement.on('timeupdate', peaks, function () {
+          //      peaks.emit('player_time_update', that.getTime());
+          //  });
+          //  this.mediaElement.on('click', peaks, function () {
+          //      peaks.emit('play', that.getTime());
+          //  });
+          ////  if(mediaElement.paused) {
+          ////      peaks.emit('player_play', that.getTime());
+          ////  }
+          //  //this.mediaElement.addEventListener('pause', function () {
+          //  //    peaks.emit('player_pause', that.getTime());
+          //  //});
+          //  //this.mediaElement.addEventListener('seeked', function () {
+          //  //    peaks.emit('player_seek', that.getTime());
+          //  //});
+
+          //this.mediaElement;
+          this.duration = this.getDuration();
+          if (this.mediaElement.readyState === 4) {
+            peaks.emit('player_load', that);
+          }
+          this.mediaElement.addEventListener('timeupdate', function () {
+            peaks.emit('player_time_update', that.getTime());
+          });
+          this.mediaElement.addEventListener('play', function () {
+            peaks.emit('player_play', that.getTime());
+          });
+          this.mediaElement.addEventListener('pause', function () {
+            peaks.emit('player_pause', that.getTime());
+          });
+          this.mediaElement.addEventListener('seeked', function () {
+            peaks.emit('player_seek', that.getTime());
+          });
         },
         setSource: function (source) {
-            this.mediaElement.setAttribute('src', source);
+            this.setAttribute('src', source);
         },
         getSource: function () {
-            return this.mediaElement.src;
+            return this.src;
         },
         play: function () {
-            this.mediaElement.play();
+            mediaElement.play();
             peaks.emit('radio_play', this.getTime());
         },
         pause: function () {
-            this.mediaElement.pause();
+            this.pause();
             peaks.emit('radio_pause', this.getTime());
         },
         getTime: function () {
-            return this.mediaElement.currentTime;
+            return this.currentTime;
         },
         getTimeFromPercentage: function (p) {
             return mixins.niceTime(this.duration * p / 100, false);
@@ -18479,7 +18502,7 @@ var radio = function (peaks) {
             return Math.floor(this.duration * p / 100);
         },
         getDuration: function () {
-            return this.mediaElement.duration;
+            return this.duration;
         },
         getPercentage: function () {
             return this.getPercentageFromSeconds(this.mediaElement.currentTime);
@@ -18489,11 +18512,50 @@ var radio = function (peaks) {
             return Math.round(percentage * 100) / 100;
         },
         seek: function (percentage) {
-            this.mediaElement.currentTime = timeFromPercentage(this.duration, percentage);
+            this.currentTime = timeFromPercentage(this.duration, percentage);
         },
         seekBySeconds: function (seconds) {
-            this.mediaElement.currentTime = seconds;
+            this.currentTime = seconds;
         }
+        // setSource: function (source) {
+        //    this.mediaElement.setAttribute('src', source);
+        //},
+        //getSource: function () {
+        //    return this.mediaElement.src;
+        //},
+        //play: function () {
+        //    this.mediaElement.play();
+        //    peaks.emit('radio_play', this.getTime());
+        //},
+        //pause: function () {
+        //    this.mediaElement.pause();
+        //    peaks.emit('radio_pause', this.getTime());
+        //},
+        //getTime: function () {
+        //    return this.mediaElement.currentTime;
+        //},
+        //getTimeFromPercentage: function (p) {
+        //    return mixins.niceTime(this.duration * p / 100, false);
+        //},
+        //getSecsFromPercentage: function (p) {
+        //    return Math.floor(this.duration * p / 100);
+        //},
+        //getDuration: function () {
+        //    return this.mediaElement.duration;
+        //},
+        //getPercentage: function () {
+        //    return this.getPercentageFromSeconds(this.mediaElement.currentTime);
+        //},
+        //getPercentageFromSeconds: function (s) {
+        //    var percentage = s / this.duration * 100;
+        //    return Math.round(percentage * 100) / 100;
+        //},
+        //seek: function (percentage) {
+        //    this.mediaElement.currentTime = timeFromPercentage(this.duration, percentage);
+        //},
+        //seekBySeconds: function (seconds) {
+        //    this.mediaElement.currentTime = seconds;
+        //}
     };
 };
 module.exports = radio;
@@ -18701,7 +18763,7 @@ function WaveformZoomView(waveformData, container, peaks) {
     that.playing = false;
     that.intermediateData = null;
     that.data = that.rootData.resample({ scale: that.options.zoomLevels[peaks.zoom.getZoom()] });
-    that.playheadPixel = that.data.at_time(that.options.mediaElement.currentTime);
+    that.playheadPixel = that.data.at_time(that.options.HTMLMediaElement.currentTime);
     that.pixelLength = that.data.adapter.length;
     that.frameOffset = 0;
     that.width = container.clientWidth;
@@ -19209,8 +19271,9 @@ module.exports = function (peaks) {
             this.origWaveformData = null;
             try {
                 this.origWaveformData = remoteData instanceof WaveformData ? remoteData : WaveformData.create(remoteData);
-                var overviewWaveformData = this.origWaveformData.resample(this.ui.player.clientWidth);
-                this.waveformOverview = new WaveformOverview(overviewWaveformData, this.ui.overview, peaks);
+                // phil clientwidth
+                //var overviewWaveformData = this.origWaveformData.resample(this.ui.player.clientWidth);
+                //this.waveformOverview = new WaveformOverview(overviewWaveformData, this.ui.overview, peaks);
             } catch (e) {
                 return peaks.emit('error', e);
             }
