@@ -17878,13 +17878,13 @@ Peaks.init = function init(opts) {
         instance.logger = opts.logger;
     }
     instance.on('error', instance.logger.bind(null));
-    //if (typeof instance.options.template === 'string') {
-    //    instance.container.innerHTML = instance.options.template;
-    //} else if (instance.options.template instanceof HTMLElement) {
-    //    instance.container.appendChild(instance.options.template);
-    //} else {
-    //    throw new TypeError('Please ensure you provide an HTML string or a DOM template as `template` instance option. Provided: ' + instance.options.template);
-    //}
+    if (typeof instance.options.template === 'string') {
+        instance.container.innerHTML = instance.options.template;
+    } else if (instance.options.template instanceof HTMLElement) {
+        instance.container.appendChild(instance.options.template);
+    } else {
+        throw new TypeError('Please ensure you provide an HTML string or a DOM template as `template` instance option. Provided: ' + instance.options.template);
+    }
     if (instance.options.keyboard)
         keyboard.init(instance);
     instance.player = new AudioPlayer(instance.options.HTMLMediaElement);
@@ -19272,8 +19272,8 @@ module.exports = function (peaks) {
             try {
                 this.origWaveformData = remoteData instanceof WaveformData ? remoteData : WaveformData.create(remoteData);
                 // phil clientwidth
-                //var overviewWaveformData = this.origWaveformData.resample(this.ui.player.clientWidth);
-                //this.waveformOverview = new WaveformOverview(overviewWaveformData, this.ui.overview, peaks);
+                var overviewWaveformData = this.origWaveformData.resample(this.ui.player.clientWidth);
+                this.waveformOverview = new WaveformOverview(overviewWaveformData, this.ui.overview, peaks);
             } catch (e) {
                 return peaks.emit('error', e);
             }
