@@ -18439,8 +18439,8 @@ var radio = function (peaks) {
             var that = this;
           //var that = mediaElement;
 
-            this.mediaElement = mediaElement;
-          //  //this.duration = this.mediaElement.duration;
+          this.mediaElement = mediaElement;
+          this.duration = this.mediaElement.duration;
           //  //if (this.mediaElement.readyState === 4) {
           //  //    peaks.emit('player_load', that);
           //  //}
@@ -18461,7 +18461,7 @@ var radio = function (peaks) {
           //  //});
 
           //this.mediaElement;
-          this.duration = this.getDuration();
+          //this.duration = this.getDuration();
           if (this.mediaElement.readyState === 4) {
             peaks.emit('player_load', that);
           }
@@ -18479,10 +18479,10 @@ var radio = function (peaks) {
           });
         },
         setSource: function (source) {
-            this.setAttribute('src', source);
+            this.mediaElement.setAttribute('src', source);
         },
         getSource: function () {
-            return this.src;
+            return this.mediaElement.src;
         },
         play: function () {
             mediaElement.play();
@@ -18493,29 +18493,29 @@ var radio = function (peaks) {
             peaks.emit('radio_pause', this.getTime());
         },
         getTime: function () {
-            return this.currentTime;
+            return this.mediaElement.currentTime;
         },
         getTimeFromPercentage: function (p) {
-            return mixins.niceTime(this.duration * p / 100, false);
+            return mixins.niceTime(this.mediaElement.duration * p / 100, false);
         },
         getSecsFromPercentage: function (p) {
-            return Math.floor(this.duration * p / 100);
+            return Math.floor(this.mediaElement.duration * p / 100);
         },
         getDuration: function () {
-            return this.duration;
+            return this.mediaElement.duration;
         },
         getPercentage: function () {
             return this.getPercentageFromSeconds(this.mediaElement.currentTime);
         },
         getPercentageFromSeconds: function (s) {
-            var percentage = s / this.duration * 100;
+            var percentage = s / this.mediaElement.duration * 100;
             return Math.round(percentage * 100) / 100;
         },
         seek: function (percentage) {
-            this.currentTime = timeFromPercentage(this.duration, percentage);
+            this.mediaElement.currentTime = timeFromPercentage(this.duration, percentage);
         },
         seekBySeconds: function (seconds) {
-            this.currentTime = seconds;
+            this.mediaElement.currentTime = seconds;
         }
         // setSource: function (source) {
         //    this.mediaElement.setAttribute('src', source);
@@ -19168,6 +19168,7 @@ WaveformAxis.prototype.axisDrawFunction = function (view, context) {
     var firstAxisLabelSecs = roundUpToNearest(currentFrameStartTime, axisLabelIntervalSecs);
     var axisLabelOffsetSecs = firstAxisLabelSecs - currentFrameStartTime;
     var axisLabelOffsetPixels = this.view.data.at_time(axisLabelOffsetSecs);
+
     context.setAttr('strokeStyle', this.view.options.axisGridlineColor);
     context.setAttr('lineWidth', 1);
     context.setAttr('font', '11px sans-serif');
