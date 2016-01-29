@@ -18441,27 +18441,7 @@ var radio = function (peaks) {
 
           this.mediaElement = mediaElement;
           this.duration = this.mediaElement.duration;
-          //  //if (this.mediaElement.readyState === 4) {
-          //  //    peaks.emit('player_load', that);
-          //  //}
-          //  this.mediaElement.on('timeupdate', peaks, function () {
-          //      peaks.emit('player_time_update', that.getTime());
-          //  });
-          //  this.mediaElement.on('click', peaks, function () {
-          //      peaks.emit('play', that.getTime());
-          //  });
-          ////  if(mediaElement.paused) {
-          ////      peaks.emit('player_play', that.getTime());
-          ////  }
-          //  //this.mediaElement.addEventListener('pause', function () {
-          //  //    peaks.emit('player_pause', that.getTime());
-          //  //});
-          //  //this.mediaElement.addEventListener('seeked', function () {
-          //  //    peaks.emit('player_seek', that.getTime());
-          //  //});
 
-          //this.mediaElement;
-          //this.duration = this.getDuration();
           if (this.mediaElement.readyState === 4) {
             peaks.emit('player_load', that);
           }
@@ -18667,6 +18647,7 @@ function WaveformOverview(waveformData, container, peaks) {
         if (!peaks.seeking) {
             that.playheadPixel = that.data.at_time(time);
             that.updateUi(that.playheadPixel);
+            //console.log('updating playheadPixel ' + that.playheadPixel);
         }
     }
     peaks.on('player_time_update', trackPlayheadPosition);
@@ -18748,6 +18729,7 @@ WaveformOverview.prototype.updateUi = function (pixel) {
         throw new Error('WaveformOverview#updateUi passed a value that is not a number: ' + pixel);
     var that = this;
     that.playheadLine.setAttr('x', pixel);
+  //console.log(that.playheadLine.x)
     that.uiLayer.draw();
 };
 module.exports = WaveformOverview;
@@ -19397,7 +19379,7 @@ var createHandle = function (color, inMarker) {
                     0.5,
                     viewHeight
                 ],
-                strokeWidth: 1,
+                strokeWidth: 2,
                 stroke: color,
                 x: 0,
                 y: 0

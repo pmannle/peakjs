@@ -1,0 +1,5 @@
+# to link this library do this
+cd /vagrant/peakjs
+bower link
+cd /vagrant/phatcast/
+bower link peakjs
