@@ -18729,6 +18729,7 @@ WaveformOverview.prototype.updateUi = function (pixel) {
         throw new Error('WaveformOverview#updateUi passed a value that is not a number: ' + pixel);
     var that = this;
     that.playheadLine.setAttr('x', pixel);
+    that.playheadLine.setAttr('x', pixel);
   //console.log(that.playheadLine.x)
     that.uiLayer.draw();
 };
@@ -18915,7 +18916,7 @@ WaveformZoomView.prototype.updateZoomWaveform = function (pixelOffset) {
     var display = that.playheadPixel >= pixelOffset && that.playheadPixel <= pixelOffset + that.width;
     if (display) {
         var remPixels = that.playheadPixel - pixelOffset;
-        that.zoomPlayheadGroup.show().setAttr('x', remPixels);
+        that.zoomPlayheadGroup.setAttr('x', remPixels).show();
         that.zoomPlayheadText.setText(mixins.niceTime(that.data.time(that.playheadPixel), false));
     } else {
         that.zoomPlayheadGroup.hide();
@@ -18930,7 +18931,8 @@ WaveformZoomView.prototype.playFrom = function (time, startPosition) {
         that.playheadLineAnimation.stop();
     }
     var frameSeconds = 0;
-    var pixelsPerSecond = that.data.pixels_per_second;
+  // -phil
+    var pixelsPerSecond = that.data.pixels_per_second * that.options.HTMLMediaElement.playbackRate;
     that.playheadLineAnimation = new Konva.Animation(function (frame) {
         var time = frame.time;
         var seconds = time / 1000;
