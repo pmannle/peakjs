@@ -18845,7 +18845,7 @@ function WaveformZoomView(waveformData, container, peaks) {
         that.peaks.emit('zoomview_resized');
     });
     var nudgeFrame = function nudgeFrame(step) {
-        var time = that.options.mediaElement.currentTime;
+        var time = that.options.HTMLMediaElement.currentTime;
         time += that.options.nudgeIncrement * step;
         that.seekFrame(that.data.at_time(time));
     };
@@ -18967,17 +18967,20 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
       _.forEach(that.data.segments, function(segment, key) {
 
         var playheadPixel = that.playheadPixel;
+        var segmentStartTime;
 
         // is the playHead over a segment?
         if (((playheadPixel > segment.start) && (playheadPixel < segment.end)) && (segment.highlighted === false)) {
           //console.log('event: startHighlight' + key);
-          that.peaks.waveform.waveformOverview.data.segments[key].highlighted = true;
+
           (that.peaks.waveform.segments.segments).forEach(function(segment, index) {
             if (that.peaks.waveform.segments.segments[index].id == key) {
-              that.peaks.waveform.segments.segments[index].highlighted = key;
+              segmentStartTime = segment.startTime;
+              that.peaks.waveform.segments.segments[index].highlighted = segmentStartTime;
             }
           });
-          segment.highlighted = key;
+          that.peaks.waveform.waveformOverview.data.segments[key].highlighted = segmentStartTime;
+          segment.highlighted = segmentStartTime;
 
           that.peaks.emit('segments.startHighlight', segment);
 
