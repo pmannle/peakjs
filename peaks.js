@@ -18974,14 +18974,14 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
           that.peaks.waveform.waveformOverview.data.segments[key].highlighted = true;
           (that.peaks.waveform.segments.segments).forEach(function(segment, index) {
             if (that.peaks.waveform.segments.segments[index].id == key) {
-              that.peaks.waveform.segments.segments[index].highlighted = true
+              that.peaks.waveform.segments.segments[index].highlighted = key;
             }
           });
-          segment.highlighted = true;
+          segment.highlighted = key;
 
           that.peaks.emit('segments.startHighlight', segment);
 
-        } else if (((playheadPixel < segment.start) || (playheadPixel > segment.end)) && (segment.highlighted === true)) {
+        } else if (((playheadPixel < segment.start) || (playheadPixel > segment.end)) && (segment.highlighted !== false)) {
           //console.log('event: endHighlight' + key);
           that.peaks.waveform.waveformOverview.data.segments[key].highlighted = false;
           (that.peaks.waveform.segments.segments).forEach(function(segment, index) {
