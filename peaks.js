@@ -18306,48 +18306,52 @@ module.exports = function (peaks) {
     var updateSegmentWaveform = function (segment) {
 
       var highlighted;
-      if (_.isUndefined(peaks.waveform.waveformOverview.data.segments[segment.id])) {
-        highlighted = false;
-      } else { highlighted = peaks.waveform.waveformOverview.data.segments[segment.id].highlighted }
+      var peakWaveData = peaks.waveform.waveformOverview.data;
+      var peakZoomViewData = peaks.waveform.waveformZoomView.data;
 
-        peaks.waveform.waveformOverview.data.set_segment(peaks.waveform.waveformOverview.data.at_time(segment.startTime), peaks.waveform.waveformOverview.data.at_time(segment.endTime), segment.id, highlighted);
-        peaks.waveform.waveformZoomView.data.set_segment(peaks.waveform.waveformZoomView.data.at_time(segment.startTime), peaks.waveform.waveformZoomView.data.at_time(segment.endTime), segment.id, highlighted);
-        var overviewStartOffset = peaks.waveform.waveformOverview.data.at_time(segment.startTime);
-        var overviewEndOffset = peaks.waveform.waveformOverview.data.at_time(segment.endTime);
-        segment.overview.setWidth(overviewEndOffset - overviewStartOffset);
+
+      if (_.isUndefined(peakWaveData.segments[segment.id])) {
+        highlighted = false;
+      } else { highlighted = peakWaveData.segments[segment.id].highlighted }
+
+      peakWaveData.set_segment(peakWaveData.at_time(segment.startTime), peakWaveData.at_time(segment.endTime), segment.id, highlighted);
+      peakZoomViewData.set_segment(peakZoomViewData.at_time(segment.startTime), peakZoomViewData.at_time(segment.endTime), segment.id, highlighted);
+      var overviewStartOffset = peakWaveData.at_time(segment.startTime);
+      var overviewEndOffset = peakWaveData.at_time(segment.endTime);
+      segment.overview.setWidth(overviewEndOffset - overviewStartOffset);
+      if (segment.editable) {
+        if (segment.overview.inMarker)
+          segment.overview.inMarker.show().setX(overviewStartOffset - segment.overview.inMarker.getWidth());
+        if (segment.overview.outMarker)
+          segment.overview.outMarker.show().setX(overviewEndOffset);
+        segment.overview.inMarker.label.setText(mixins.niceTime(segment.startTime, false));
+        segment.overview.outMarker.label.setText(mixins.niceTime(segment.endTime, false));
+      }
+      SegmentShape.update.call(segment.overview.waveformShape, peaks.waveform.waveformOverview, segment.id);
+      var zoomStartOffset = peakZoomViewData.at_time(segment.startTime);
+      var zoomEndOffset = peakZoomViewData.at_time(segment.endTime);
+      var frameStartOffset = peaks.waveform.waveformZoomView.frameOffset;
+      var frameEndOffset = peaks.waveform.waveformZoomView.frameOffset + peaks.waveform.waveformZoomView.width;
+      if (zoomStartOffset < frameStartOffset)
+        zoomStartOffset = frameStartOffset;
+      if (zoomEndOffset > frameEndOffset)
+        zoomEndOffset = frameEndOffset;
+      if (peakZoomViewData.segments[segment.id].visible) {
+        var startPixel = zoomStartOffset - frameStartOffset;
+        var endPixel = zoomEndOffset - frameStartOffset;
+        segment.zoom.show();
         if (segment.editable) {
-            if (segment.overview.inMarker)
-                segment.overview.inMarker.show().setX(overviewStartOffset - segment.overview.inMarker.getWidth());
-            if (segment.overview.outMarker)
-                segment.overview.outMarker.show().setX(overviewEndOffset);
-            segment.overview.inMarker.label.setText(mixins.niceTime(segment.startTime, false));
-            segment.overview.outMarker.label.setText(mixins.niceTime(segment.endTime, false));
+          if (segment.zoom.inMarker)
+            segment.zoom.inMarker.show().setX(startPixel - segment.zoom.inMarker.getWidth());
+          if (segment.zoom.outMarker)
+            segment.zoom.outMarker.show().setX(endPixel);
+          segment.zoom.inMarker.label.setText(mixins.niceTime(segment.startTime, false));
+          segment.zoom.outMarker.label.setText(mixins.niceTime(segment.endTime, false));
         }
-        SegmentShape.update.call(segment.overview.waveformShape, peaks.waveform.waveformOverview, segment.id);
-        var zoomStartOffset = peaks.waveform.waveformZoomView.data.at_time(segment.startTime);
-        var zoomEndOffset = peaks.waveform.waveformZoomView.data.at_time(segment.endTime);
-        var frameStartOffset = peaks.waveform.waveformZoomView.frameOffset;
-        var frameEndOffset = peaks.waveform.waveformZoomView.frameOffset + peaks.waveform.waveformZoomView.width;
-        if (zoomStartOffset < frameStartOffset)
-            zoomStartOffset = frameStartOffset;
-        if (zoomEndOffset > frameEndOffset)
-            zoomEndOffset = frameEndOffset;
-        if (peaks.waveform.waveformZoomView.data.segments[segment.id].visible) {
-            var startPixel = zoomStartOffset - frameStartOffset;
-            var endPixel = zoomEndOffset - frameStartOffset;
-            segment.zoom.show();
-            if (segment.editable) {
-                if (segment.zoom.inMarker)
-                    segment.zoom.inMarker.show().setX(startPixel - segment.zoom.inMarker.getWidth());
-                if (segment.zoom.outMarker)
-                    segment.zoom.outMarker.show().setX(endPixel);
-                segment.zoom.inMarker.label.setText(mixins.niceTime(segment.startTime, false));
-                segment.zoom.outMarker.label.setText(mixins.niceTime(segment.endTime, false));
-            }
-            SegmentShape.update.call(segment.zoom.waveformShape, peaks.waveform.waveformZoomView, segment.id);
-        } else {
-            segment.zoom.hide();
-        }
+        SegmentShape.update.call(segment.zoom.waveformShape, peaks.waveform.waveformZoomView, segment.id);
+      } else {
+        segment.zoom.hide();
+      }
     };
     var segmentHandleDrag = function (thisSeg, segment) {
             if (thisSeg.inMarker.getX() > 0) {
@@ -18962,6 +18966,8 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
         var remPixels = that.playheadPixel - that.frameOffset;
         that.zoomPlayheadGroup.show().setAttr('x', remPixels);
         that.zoomPlayheadText.setText(mixins.niceTime(that.data.time(that.playheadPixel), false));
+
+
       // check if we are over a segment
 
       _.forEach(that.data.segments, function(segment, key) {
@@ -18980,12 +18986,13 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
             }
           });
           that.peaks.waveform.waveformOverview.data.segments[key].highlighted = segmentStartTime;
+            // show highlighted segment notification
           segment.highlighted = segmentStartTime;
 
-          that.peaks.emit('segments.startHighlight', segment);
+          that.peaks.emit('segments.startHighlight', { segment, key });
 
         } else if (((playheadPixel < segment.start) || (playheadPixel > segment.end)) && (segment.highlighted !== false)) {
-          //console.log('event: endHighlight' + key);
+          // hide highlight
           that.peaks.waveform.waveformOverview.data.segments[key].highlighted = false;
           (that.peaks.waveform.segments.segments).forEach(function(segment, index) {
             if (that.peaks.waveform.segments.segments[index].id == key) {
@@ -18994,7 +19001,7 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
           });
           segment.highlighted = false;
 
-          that.peaks.emit('segments.endHighlight', segment)
+          that.peaks.emit('segments.endHighlight', { segment, key, playheadPixel })
         }
       })
     } else {
