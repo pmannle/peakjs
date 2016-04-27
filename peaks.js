@@ -18450,7 +18450,8 @@ var radio = function (peaks) {
             peaks.emit('player_load', that);
           }
           this.mediaElement.addEventListener('timeupdate', function () {
-            //peaks.emit('player_time_update', that.getTime());
+            // keep timelines synced - zoom and overview
+            peaks.emit('player_time_update', that.getTime());
           });
           this.mediaElement.addEventListener('play', function () {
             peaks.emit('player_play', that.getTime());
@@ -18459,7 +18460,8 @@ var radio = function (peaks) {
             peaks.emit('player_pause', that.getTime());
           });
           this.mediaElement.addEventListener('seeked', function () {
-            //peaks.emit('player_seek', that.getTime());
+            // remove if possible
+            peaks.emit('player_seek', that.getTime());
           });
         },
         setSource: function (source) {
@@ -18981,7 +18983,7 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
         var segmentStartTime;
 
         // is the playHead over a segment?
-        if (((playheadPixel > segment.start) && (playheadPixel < segment.end))) {
+        if (((playheadPixel >= (segment.start - 5)) && (playheadPixel < segment.end))) {
           //console.log('event: startHighlight' + key);
 
           (that.peaks.waveform.segments.segments).forEach(function(segment, index) {
@@ -18999,7 +19001,7 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
           startHighlightEmitted = true;
 
         }
-        else if (((playheadPixel < segment.start) || (playheadPixel > segment.end))) {
+        else if (((playheadPixel < (segment.start -5)) || (playheadPixel > segment.end))) {
           // hide highlight
           that.peaks.waveform.waveformOverview.data.segments[key].highlighted = false;
           (that.peaks.waveform.segments.segments).forEach(function(segment, index) {
