@@ -17922,7 +17922,7 @@ Peaks.prototype = Object.create(ee.prototype, {
                 }
                 if (Array.isArray(segments)) {
                     segments.forEach(function (segment) {
-                        self.waveform.segments.createSegment(segment.startTime, segment.endTime, segment.editable, segment.color, segment.labelTexts, segment.selected);
+                        self.waveform.segments.createSegment(segment.startTime, segment.endTime, segment.editable, segment.color, segment.labelText, segment.selected);
                     });
                     self.waveform.segments.render();
                 } else {
