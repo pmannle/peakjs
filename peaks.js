@@ -17907,7 +17907,7 @@ Peaks.prototype = Object.create(ee.prototype, {
     segments: {
         get: function () {
             var self = this;
-            function addSegment(startTime, endTime, editable, color, labelText) {
+            function addSegment(startTime, endTime, editable, color, labelText, selected) {
                 var segments = arguments[0];
                 if (typeof segments === 'number') {
                     segments = [{
@@ -17916,12 +17916,13 @@ Peaks.prototype = Object.create(ee.prototype, {
                             editable: editable,
                             color: color,
                             labelText: labelText,
-                            highlights: false
+                            highlights: false,
+                            selected: selected
                         }];
                 }
                 if (Array.isArray(segments)) {
                     segments.forEach(function (segment) {
-                        self.waveform.segments.createSegment(segment.startTime, segment.endTime, segment.editable, segment.color, segment.labelText);
+                        self.waveform.segments.createSegment(segment.startTime, segment.endTime, segment.editable, segment.color, segment.labelTexts, segment.selected);
                     });
                     self.waveform.segments.render();
                 } else {
@@ -18386,7 +18387,7 @@ module.exports = function (peaks) {
         this.segments.forEach(updateSegmentWaveform);
         this.render();
     };
-    this.createSegment = function (startTime, endTime, editable, color, labelText) {
+    this.createSegment = function (startTime, endTime, editable, color, labelText, selected) {
         var segmentId = 'segment' + self.segments.length;
         if (startTime >= 0 === false) {
             throw new TypeError('[waveform.segments.createSegment] startTime should be a positive value');
@@ -18398,7 +18399,8 @@ module.exports = function (peaks) {
             throw new RangeError('[waveform.segments.createSegment] endTime should be higher than startTime');
         }
         var segment = createSegmentWaveform(segmentId, startTime, endTime, editable, color, labelText);
-        //segment.highlighted = false // trigger for showing segment in angular - phil
+        // add in any saved data for selected notification type
+        segment.selected = selected;
         updateSegmentWaveform(segment);
         self.segments.push(segment);
         return segment;
