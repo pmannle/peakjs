@@ -18998,7 +18998,7 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
             // show highlighted segment notification
           segment.highlighted = segmentStartTime;
 
-          that.peaks.emit('segments.startHighlight', { segment, key });
+          that.peaks.emit('segments.startHighlight', { segment: segment, key: key });
 
           startHighlightEmitted = true;
 
@@ -19015,7 +19015,7 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
       })
 
       if (!startHighlightEmitted) {
-        that.peaks.emit('segments.endHighlight', { playheadPixel })
+        that.peaks.emit('segments.endHighlight', { playheadPixel: playheadPixel })
         startHightlightEmitted  = false;
       }
     } else {
