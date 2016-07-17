@@ -17945,20 +17945,25 @@ Peaks.prototype = Object.create(ee.prototype, {
                     var fnFilter;
                     if (endTime > 0) {
                         fnFilter = function (segment) {
-                            return segment.startTime === startTime && segment.endTime === endTime;
+                            if (segment.startTime === startTime && segment.endTime === endTime) {
+                                return true;
+                            } else {
+                                return false;
+                            }
                         };
                     } else {
                         fnFilter = function (segment) {
                             return segment.startTime === startTime;
                         };
                     }
+                    var deleteIndex;
                     var indexes = self.waveform.segments.segments.filter(fnFilter).map(function (segment, i) {
-                            self.waveform.segments.remove(segment);
+                            deleteIndex = self.waveform.segments.remove(segment);
                             return i;
                         }).sort(function (a, b) {
                             return b - a;
                         }).map(function (index) {
-                            self.waveform.segments.segments.splice(index, 1);
+                            self.waveform.segments.segments.splice(deleteIndex, 1);
                             return index;
                         });
                     self.waveform.segments.updateSegments();
@@ -18257,6 +18262,7 @@ module.exports = function (peaks) {
                 //color: color || getSegmentColor(),
                 editable: editable
             };
+
         var segmentZoomGroup = new Konva.Group();
         var segmentOverviewGroup = new Konva.Group();
         var segmentGroups = [
@@ -18301,6 +18307,7 @@ module.exports = function (peaks) {
         segment.zoom.view = peaks.waveform.waveformZoomView;
         segment.overview = segmentOverviewGroup;
         segment.overview.view = peaks.waveform.waveformOverview;
+
 
       return segment;
     };
@@ -18737,8 +18744,8 @@ WaveformOverview.prototype.updateUi = function (pixel) {
         throw new Error('WaveformOverview#updateUi passed a value that is not a number: ' + pixel);
     var that = this;
     that.playheadLine.setAttr('x', pixel);
-    that.playheadLine.setAttr('x', pixel);
-  //console.log(that.playheadLine.x)
+    //that.playheadLine.setAttr('x', pixel);
+    //console.log(that.playheadLine.x)
     that.uiLayer.draw();
 };
 module.exports = WaveformOverview;
