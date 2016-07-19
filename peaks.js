@@ -17777,7 +17777,8 @@ WaveformData.builders = {
 module.exports = WaveformData;
 },{"./lib/adapters":5,"./lib/builders/webaudio.js":8,"./lib/core":9}],15:[function(require,module,exports){
 var EventEmitter = require('EventEmitter'), AudioPlayer = require('peaks/player/player'), Waveform = require('peaks/waveform/waveform.core'), mixins = require('peaks/waveform/waveform.mixins'), keyboard = require('peaks/player/player.keyboard');
-'use strict';
+
+    'use strict';
 var buildUi = function (container) {
     return {
         'player': container.querySelector('.waveform'),
@@ -17972,9 +17973,27 @@ Peaks.prototype = Object.create(ee.prototype, {
                 removeAll: function () {
                     self.waveform.segments.removeAll();
                 },
-                getSegments: function () {
+                getSegments: function (scopeSegments) {
 
-                    return self.waveform.segments.segments;
+                  // scope segments contains input from the UI we want to merge with
+                  // the segments array before returning
+
+                  if (scopeSegments) {
+                    self.waveform.segments.segments.forEach(function (segment, index) {
+                      if (scopeSegments[index]) {  // this is a newly created segment, it wont' be in angular scope yet
+                        for (var key in segment) {
+                          if (key == 'selected' && scopeSegments[index].selected) {
+                            segment.selected = scopeSegments[index].selected;
+                          }
+                          if (key == 'labelText' && scopeSegments[index].labelText) {
+                            segment.labelText = scopeSegments[index].labelText;
+                          }
+                        }
+                      }
+                    });
+                  }
+
+                  return self.waveform.segments.segments;
                 }
             };
         }
@@ -18784,7 +18803,11 @@ function WaveformZoomView(waveformData, container, peaks) {
     that.axis = new WaveformAxis(that);
     that.createZoomWaveform();
     that.createUi();
-    that.stage.on('mousedown', function (event) {
+    // that.stage.on('mouseover', function () { document.body.style.cursor = 'move'; });
+    // that.stage.on('mouseout', function () { document.body.style.cursor = 'default'; });
+
+
+  that.stage.on('mousedown', function (event) {
         if (event.target && !event.target.attrs.draggable && !event.target.parent.attrs.draggable) {
             if (event.type === 'mousedown') {
                 var x = event.evt.layerX, dX, p;
@@ -19023,7 +19046,7 @@ WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
 
       if (!startHighlightEmitted) {
         that.peaks.emit('segments.endHighlight', { playheadPixel: playheadPixel })
-        startHightlightEmitted  = false;
+        //startHightlightEmitted  = false;
       }
     } else {
         that.zoomPlayheadGroup.hide();
