@@ -17908,6 +17908,7 @@ Peaks.prototype = Object.create(ee.prototype, {
     segments: {
         get: function () {
             var self = this;
+
             function addSegment(startTime, endTime, editable, color, labelText, selected) {
                 var segments = arguments[0];
                 if (typeof segments === 'number') {
@@ -17918,12 +17919,18 @@ Peaks.prototype = Object.create(ee.prototype, {
                             color: color,
                             labelText: labelText,
                             highlights: false,
-                            selected: selected
+                            selected: selected,
+                            limitLeft: limitLeft,
+                            limitRight: limitRight
                         }];
                 }
                 if (Array.isArray(segments)) {
                     segments.forEach(function (segment) {
-                        self.waveform.segments.createSegment(segment.startTime, segment.endTime, segment.editable, segment.color, segment.labelText, segment.selected);
+                        self.waveform.segments.createSegment(
+                            segment.startTime, segment.endTime,
+                            segment.editable, segment.color,
+                            segment.labelText, segment.selected,
+                            segment.limitLeft, segment.limitRight);
                     });
                     self.waveform.segments.render();
                 } else {
@@ -17973,6 +17980,8 @@ Peaks.prototype = Object.create(ee.prototype, {
                 removeAll: function () {
                     self.waveform.segments.removeAll();
                 },
+
+
                 getSegments: function (scopeSegments) {
 
                   // scope segments contains input from the UI we want to merge with
@@ -17994,7 +18003,15 @@ Peaks.prototype = Object.create(ee.prototype, {
                   }
 
                   return self.waveform.segments.segments;
-                }
+                },
+              updateSegmentLimits: function (segmentId, limitLeft, limitRight) {
+                self.waveform.segments.segments.forEach(function(segment, index) {
+                  if (segment.id == segmentId) {
+                    if (limitLeft) { segment.limitLeft = limitLeft; }
+                    if (limitRight) { segment.limitRight = limitRight; }
+                  }
+                });
+            }
             };
         }
     },
@@ -18381,17 +18398,32 @@ module.exports = function (peaks) {
       }
     };
     var segmentHandleDrag = function (thisSeg, segment) {
-            if (thisSeg.inMarker.getX() > 0) {
+
+              if (thisSeg.inMarker.getX() > 0) {
                 var inOffset = thisSeg.view.frameOffset + thisSeg.inMarker.getX() + thisSeg.inMarker.getWidth();
                 segment.startTime = thisSeg.view.data.time(inOffset);
-            }
-            if (thisSeg.outMarker.getX() < thisSeg.view.width) {
+              }
+              if (thisSeg.outMarker.getX() < thisSeg.view.width) {
                 var outOffset = thisSeg.view.frameOffset + thisSeg.outMarker.getX();
                 segment.endTime = thisSeg.view.data.time(outOffset);
+              }
+
+            // keep segments from overlapping
+
+            if (segment.startTime <= segment.limitLeft || segment.endTime >= segment.limitRight) {
+              if (segment.startTime <= segment.limitLeft) {
+                segment.startTime = segment.limitLeft;
+              }
+              if (segment.endTime >= segment.limitRight) {
+                segment.endTime = segment.limitRight;
+              }
+              console.log('Limit reached');
             }
+
             peaks.emit('segments.dragged', segment);
             updateSegmentWaveform(segment);
             this.render();
+
         }.bind(this);
     var getSegmentColor = function () {
         var c;
@@ -18413,7 +18445,7 @@ module.exports = function (peaks) {
         this.segments.forEach(updateSegmentWaveform);
         this.render();
     };
-    this.createSegment = function (startTime, endTime, editable, color, labelText, selected) {
+    this.createSegment = function (startTime, endTime, editable, color, labelText, selected, limitLeft, limitRight) {
         var segmentId = 'segment' + self.segments.length;
         if (startTime >= 0 === false) {
             throw new TypeError('[waveform.segments.createSegment] startTime should be a positive value');
@@ -18427,6 +18459,9 @@ module.exports = function (peaks) {
         var segment = createSegmentWaveform(segmentId, startTime, endTime, editable, color, labelText);
         // add in any saved data for selected notification type
         segment.selected = selected;
+        // add borders so segments don't overlap
+        segment.limitLeft = limitLeft;
+        segment.limitRight = limitRight;
         updateSegmentWaveform(segment);
         self.segments.push(segment);
         return segment;
