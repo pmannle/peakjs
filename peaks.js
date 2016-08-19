@@ -18007,8 +18007,8 @@ Peaks.prototype = Object.create(ee.prototype, {
               updateSegmentLimits: function (segmentId, limitLeft, limitRight) {
                 self.waveform.segments.segments.forEach(function(segment, index) {
                   if (segment.id == segmentId) {
-                    if (limitLeft) { segment.limitLeft = limitLeft; }
-                    if (limitRight) { segment.limitRight = limitRight; }
+                    if (typeof (limitLeft) === 'number') { segment.limitLeft = limitLeft; }
+                    if (typeof (limitRight) === 'number') { segment.limitRight = limitRight; }
                   }
                 });
             }
