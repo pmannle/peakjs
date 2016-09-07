@@ -17818,7 +17818,7 @@ function Peaks(container) {
         randomizeSegmentColor: true,
         //height: 200,
         segmentColor: 'rgba(255, 161, 39, 1)',
-        playheadColor: 'rgba(0, 0, 0, 1)',
+        playheadColor: 'rgba(255, 0, 0, 1)',
         playheadTextColor: '#aaa',
         axisGridlineColor: '#ccc',
         axisLabelColor: '#aaa',
@@ -18131,7 +18131,7 @@ WaveShape.createShape = function createShape(segmentData, view) {
             fill: segmentData.color,
             strokeWidth: 0,
             opacity: 1,
-            height: view.height
+            height: view.height,
         });
     shape.sceneFunc(WaveShape.drawFunc.bind(shape, view, segmentData.id));
     return shape;
@@ -18287,6 +18287,7 @@ module.exports = function (peaks) {
             view.stage.add(view.segmentLayer);
             view.segmentLayer.moveToTop();
         }
+        peaks.waveform.waveformZoomView.segmentLayer.offsetY(-40);
         return view;
     });
     var createSegmentWaveform = function (segmentId, startTime, endTime, editable, color, labelText) {
@@ -18681,9 +18682,10 @@ function WaveformOverview(waveformData, container, peaks) {
     that.stage = new Konva.Stage({
         container: container,
         width: that.width,
-        height: that.height // 50
+        height: that.height, // 50
+        //offsetY: 10
     });
-    that.waveformLayer = new Konva.Layer();
+    that.waveformLayer = new Konva.Layer({});
     that.background = new Konva.Rect({
         x: 0,
         y: 0,
@@ -18824,18 +18826,26 @@ function WaveformZoomView(waveformData, container, peaks) {
     that.stage = new Konva.Stage({
         container: container,
         width: that.width,
-        height: that.height
+        height: 260 // that.height
     });
-    that.zoomWaveformLayer = new Konva.Layer();
-    that.uiLayer = new Konva.Layer();
+    that.zoomWaveformLayer = new Konva.Layer({offsetY: -20, height: 220});
+    // uiLayer includes playhead and time markers
+    that.uiLayer = new Konva.Layer({
+      // height: 100,
+      //stroke: '#000',
+    });
     that.background = new Konva.Rect({
         x: 0,
         y: 0,
         width: that.width,
-        height: that.height
+        height: 240, // that.height,
+        stroke: '#999',
+        strokeWidth: 1
     });
     that.zoomWaveformLayer.add(that.background);
-    that.axis = new WaveformAxis(that);
+
+    // adding two parameters, offsetY & zoomViewYaxis
+    that.axis = new WaveformAxis(that, -20, 240); // phil
     that.createZoomWaveform();
     that.createUi();
     // that.stage.on('mouseover', function () { document.body.style.cursor = 'move'; });
@@ -18934,7 +18944,8 @@ WaveformZoomView.prototype.createZoomWaveform = function () {
       fillLinearGradientStartPoint: { x : 0, y : 50},
       fillLinearGradientEndPoint: { x : 0, y : 100},
       fillLinearGradientColorStops: [0, 'cornflowerblue', 1, 'darkgray'],
-        strokeWidth: 0
+        strokeWidth: 0,
+        offsetY: -20,
     });
     that.zoomWaveformShape.sceneFunc(mixins.waveformDrawFunction.bind(that.zoomWaveformShape, that));
     that.zoomWaveformLayer.add(that.zoomWaveformShape);
@@ -18948,14 +18959,14 @@ WaveformZoomView.prototype.createUi = function () {
             0.5,
             0,
             0.5,
-            that.height
+            that.height+20
         ],
         stroke: that.options.playheadColor,
         strokeWidth: 1
     });
     that.zoomPlayheadText = new Konva.Text({
-        x: 2,
-        y: 12,
+        x: 10,
+        y: 0,
         text: '00:00:00',
         fontSize: 11,
         fontFamily: 'sans-serif',
@@ -19197,12 +19208,16 @@ function roundUpToNearest(value, multiple) {
         return value + multiple - remainder;
     }
 }
-function WaveformAxis(view) {
+function WaveformAxis(view, offsetY, zoomViewYaxis) {
     this.view = view;
+    var offsetY = offsetY ? offsetY : null;
+    var zoomViewYaxis = zoomViewYaxis ? zoomViewYaxis : null;
+    if (zoomViewYaxis) { this.zoomViewYaxis = zoomViewYaxis; }
     this.axisShape = new Konva.Shape({
         fill: 'rgba(38, 255, 161, 1)',
         strokeWidth: 0,
-        opacity: 1
+        opacity: 1,
+        offsetY: offsetY
     });
     this.axisShape.sceneFunc(this.axisDrawFunction.bind(this, view));
     this.view.uiLayer.add(this.axisShape);
@@ -19235,6 +19250,10 @@ WaveformAxis.prototype.getAxisLabelScale = function () {
     return secs;
 };
 WaveformAxis.prototype.axisDrawFunction = function (view, context) {
+
+    // do we have a custom height we need to adjust the axis to? if not, use the view.height
+    var zoomViewYaxis = this.zoomViewYaxis ? this.zoomViewYaxis : this.view.height;
+
     var currentFrameStartTime = view.data.time(view.frameOffset);
     var markerHeight = 10;
     var axisLabelIntervalSecs = this.getAxisLabelScale();
@@ -19258,13 +19277,16 @@ WaveformAxis.prototype.axisDrawFunction = function (view, context) {
         context.beginPath();
         context.moveTo(x + 0.5, 0);
         context.lineTo(x + 0.5, 0 + markerHeight);
-        context.moveTo(x + 0.5, this.view.height);
-        context.lineTo(x + 0.5, this.view.height - markerHeight);
+        //context.moveTo(x + 0.5, this.view.height);
+        //context.lineTo(x + 0.5, this.view.height - markerHeight);
+        context.moveTo(x + 0.5, zoomViewYaxis);
+        context.lineTo(x + 0.5, zoomViewYaxis - markerHeight);
         context.stroke();
         var label = mixins.niceTime(secs, true);
         var labelWidth = context._context.measureText(label).width;
         var labelX = x - labelWidth / 2;
-        var labelY = this.view.height - 1 - markerHeight;
+        var labelY = zoomViewYaxis - 1 - markerHeight; // -phil
+       //var labelY = 250 - markerHeight; // phil
         if (labelX >= 0) {
             context.fillText(label, labelX, labelY);
         }
@@ -19449,8 +19471,8 @@ var createHandle = function (color, inMarker) {
         opacity: 0
       });
 
-
-      var gripGraphic = new Konva.Image.fromURL('/assets/handleGraphic.svg', function(gripGraphic){
+      // phil mod
+      var gripGraphic = new Konva.Image.fromURL('/assets/handleRight.svg', function(gripGraphic){
         // image is Konva.Image instance
         gripGraphic.x(handleX);
         gripGraphic.y(handleY);
@@ -19470,7 +19492,7 @@ var createHandle = function (color, inMarker) {
                     0.5,
                     viewHeight
                 ],
-                strokeWidth: 2,
+                strokeWidth: 1,
                 stroke: color,
                 x: 0,
                 y: 0
