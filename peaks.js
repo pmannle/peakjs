@@ -17810,8 +17810,8 @@ function Peaks(container) {
         logger: null,
         keyboard: false,
         nudgeIncrement: 0.01,
-        inMarkerColor: '#a0a0a0',
-        outMarkerColor: '#a0a0a0',
+        inMarkerColor: '#000000',
+        outMarkerColor: '#000000',
         zoomWaveformColor: 'rgba(0, 225, 128, 1)',
         overviewWaveformColor: 'rgba(0,0,0,0.2)',
         overviewHighlightRectangleColor: 'grey',
@@ -18324,7 +18324,7 @@ module.exports = function (peaks) {
             // add gradient - phil
             segmentGroup.waveformShape.fillLinearGradientStartPoint({ x : 0, y : gradientStartY});
             segmentGroup.waveformShape.fillLinearGradientEndPoint({ x : 0, y : gradientEndY});
-            segmentGroup.waveformShape.fillLinearGradientColorStops([0, 'red', 1, 'orange']);
+            segmentGroup.waveformShape.fillLinearGradientColorStops([0, '#FFDE17', 1, 'orange']);
 
             segmentGroup.waveformShape.on('mouseenter', menter);
             segmentGroup.waveformShape.on('mouseleave', mleave);
@@ -18959,7 +18959,7 @@ WaveformZoomView.prototype.createUi = function () {
             0.5,
             0,
             0.5,
-            that.height+20
+            that.height+60
         ],
         stroke: that.options.playheadColor,
         strokeWidth: 1
@@ -19460,18 +19460,19 @@ var createHandle = function (color, inMarker) {
         group.label = text;
 
 
-      var handle = new Konva.Rect({
-        width: handleWidth,
-        height: handleHeight,
-        fill: color,
-        stroke: color,
-        strokeWidth: 1,
-        x: handleX,
-        y: handleY,
-        opacity: 0
-      });
+      //var handle = new Konva.Rect({
+      //  width: handleWidth,
+      //  height: handleHeight,
+      //  fill: color,
+      //  stroke: color,
+      //  strokeWidth: 1,
+      //  x: handleX,
+      //  y: handleY,
+      //  opacity: 0
+      //});
 
       // phil mod
+      /*
       var gripGraphic = new Konva.Image.fromURL('/assets/handleRight.svg', function(gripGraphic){
         // image is Konva.Image instance
         gripGraphic.x(handleX);
@@ -19483,11 +19484,43 @@ var createHandle = function (color, inMarker) {
         group.draw();
         gripGraphic.moveToBottom();
       });
+      */
+
+
+      if (inMarker) {
+        var handle = new Konva.Path({
+          x: handleX,
+          y: handleY,
+          data: 'M39.238,96.389L5.785,53.082c-0.406-0.449-0.717-0.941-0.949-1.477c-0.23-0.537-0.348-1.059-0.348-1.568c0-0.56,0.117-1.109,0.348-1.644c0.232-0.538,0.543-1.03,0.949-1.482L39.238,3.611L29.307,49.33L39.238,96.389z',
+          fill: 'orange',
+          scale: {
+            x: .33,
+            y: .33
+          },
+          stroke: 'black',
+          strokeWidth: 2,
+          opacity: .7
+        });
+      } else {
+        var handle = new Konva.Path({
+          x: handleX,
+          y: handleY,
+          data: 'M13.364,96.391c-0.862-0.85-1.295-1.877-1.295-3.094c0-1.207,0.433-2.234,1.295-3.08l4.515-35.863v-8.709L13.364,9.785c-0.862-0.846-1.295-1.874-1.295-3.087c0-1.211,0.433-2.239,1.295-3.085c0.875-0.847,1.92-1.269,3.169-1.269c1.241,0,2.286,0.422,3.155,1.269l27.129,43.299c0.406,0.453,0.717,0.944,0.949,1.482c0.23,0.535,0.348,1.084,0.348,1.644c0,0.51-0.117,1.032-0.348,1.569c-0.232,0.535-0.543,1.027-0.949,1.477L19.688,96.391c-0.869,0.842-1.914,1.266-3.155,1.266C15.284,97.656,14.239,97.232,13.364,96.391L13.364,96.391z',
+          fill: 'orange',
+          scale: {
+            x: .33,
+            y: .33
+          },
+          stroke: 'black',
+          strokeWidth: 2,
+          opacity: .7
+        });
+      }
 
 
         var line = new Konva.Line({
                 points: [
-                    0,
+                    0.5,
                     0,
                     0.5,
                     viewHeight
