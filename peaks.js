@@ -18307,13 +18307,17 @@ module.exports = function (peaks) {
                 segmentOverviewGroup
             ];
         var menter = function (event) {
-            this.parent.label.show();
+            //this.parent.label.show();
+            document.body.style.cursor = 'move';
             this.parent.view.segmentLayer.draw();
+
         };
         var mleave = function (event) {
-            this.parent.label.hide();
+            //this.parent.label.hide();
+            document.body.style.cursor = 'default';
             this.parent.view.segmentLayer.draw();
         };
+
         segmentGroups.forEach(function (segmentGroup, i) {
             var view = self.views[i];
             segmentGroup.waveformShape = SegmentShape.createShape(segment, view);
@@ -18333,9 +18337,10 @@ module.exports = function (peaks) {
             segmentGroup.add(segmentGroup.label.hide());
             if (editable) {
                 var draggable = true;
-                segmentGroup.inMarker = new peaks.options.segmentInMarker(draggable, segmentGroup, segment, segmentHandleDrag, view.height);
+                var visible = i == 0 ? true : false;
+                segmentGroup.inMarker = new peaks.options.segmentInMarker(draggable, segmentGroup, segment, segmentHandleDrag, view.height, visible);
                 segmentGroup.add(segmentGroup.inMarker);
-                segmentGroup.outMarker = new peaks.options.segmentOutMarker(draggable, segmentGroup, segment, segmentHandleDrag, view.height);
+                segmentGroup.outMarker = new peaks.options.segmentOutMarker(draggable, segmentGroup, segment, segmentHandleDrag, view.height, visible);
                 segmentGroup.add(segmentGroup.outMarker);
             }
             view.segmentLayer.add(segmentGroup);
@@ -18357,7 +18362,12 @@ module.exports = function (peaks) {
 
       if (_.isUndefined(peakWaveData.segments[segment.id])) {
         highlighted = false;
-      } else { highlighted = peakWaveData.segments[segment.id].highlighted }
+      } else {
+        highlighted = peakWaveData.segments[segment.id].highlighted;
+        segment.overview.moveToTop();
+        segment.zoom.moveToTop();
+
+      }
 
       peakWaveData.set_segment(peakWaveData.at_time(segment.startTime), peakWaveData.at_time(segment.endTime), segment.id, highlighted);
       peakZoomViewData.set_segment(peakZoomViewData.at_time(segment.startTime), peakZoomViewData.at_time(segment.endTime), segment.id, highlighted);
@@ -18400,6 +18410,8 @@ module.exports = function (peaks) {
     };
     var segmentHandleDrag = function (thisSeg, segment) {
 
+              thisSeg.moveToTop();
+
               if (thisSeg.inMarker.getX() > 0) {
                 var inOffset = thisSeg.view.frameOffset + thisSeg.inMarker.getX() + thisSeg.inMarker.getWidth();
                 segment.startTime = thisSeg.view.data.time(inOffset);
@@ -18409,7 +18421,7 @@ module.exports = function (peaks) {
                 segment.endTime = thisSeg.view.data.time(outOffset);
               }
 
-            // keep segments from overlapping
+            // keep segments from overlappin
 
             if (segment.startTime <= segment.limitLeft || segment.endTime >= segment.limitRight) {
               if (segment.startTime <= segment.limitLeft) {
@@ -18802,6 +18814,7 @@ WaveformOverview.prototype.updateUi = function (pixel) {
     that.playheadLine.setAttr('x', pixel);
     //that.playheadLine.setAttr('x', pixel);
     //console.log(that.playheadLine.x)
+    that.uiLayer.moveToTop();
     that.uiLayer.draw();
 };
 module.exports = WaveformOverview;
@@ -18829,6 +18842,15 @@ function WaveformZoomView(waveformData, container, peaks) {
         height: 260 // that.height
     });
     that.zoomWaveformLayer = new Konva.Layer({offsetY: -20, height: 220});
+
+    // cursor style so user
+    that.zoomWaveformLayer.on('mouseover', function(event) {
+      document.body.style.cursor = 'move';
+    })
+    that.zoomWaveformLayer.on('mouseout', function(event) {
+      document.body.style.cursor = 'default';
+    })
+
     // uiLayer includes playhead and time markers
     that.uiLayer = new Konva.Layer({
       // height: 100,
@@ -19419,7 +19441,7 @@ var Konva = require('konva');
 'use strict';
 var createHandle = function (color, inMarker) {
 
-    return function (draggable, segment, parent, onDrag, viewHeight) {
+    return function (draggable, segment, parent, onDrag, viewHeight, overView) {
         var handleHeight = 30;
         var handleWidth = handleHeight / 2;
         // phil
@@ -19446,46 +19468,18 @@ var createHandle = function (color, inMarker) {
             }).on('dragmove', function (event) {
                 onDrag(segment, parent);
             });
-        var xPosition = inMarker ? -24 : 24;
+        var xPosition = inMarker ? -30 : 30;
         var text = new Konva.Text({
                 x: xPosition,
                 y: viewHeight / 2 - 5,
                 text: '',
-                fontSize: 14,
+                fontSize: 12,
                 fontFamily: 'sans-serif',
                 fill: '#000',
                 textAlign: 'center'
             });
         text.hide();
         group.label = text;
-
-
-      //var handle = new Konva.Rect({
-      //  width: handleWidth,
-      //  height: handleHeight,
-      //  fill: color,
-      //  stroke: color,
-      //  strokeWidth: 1,
-      //  x: handleX,
-      //  y: handleY,
-      //  opacity: 0
-      //});
-
-      // phil mod
-      /*
-      var gripGraphic = new Konva.Image.fromURL('/assets/handleRight.svg', function(gripGraphic){
-        // image is Konva.Image instance
-        gripGraphic.x(handleX);
-        gripGraphic.y(handleY);
-        gripGraphic.width(handleWidth);
-        gripGraphic.height(handleHeight);
-
-        group.add(gripGraphic);
-        group.draw();
-        gripGraphic.moveToBottom();
-      });
-      */
-
 
       if (inMarker) {
         var handle = new Konva.Path({
@@ -19544,7 +19538,12 @@ var createHandle = function (color, inMarker) {
         });
         group.add(text);
         group.add(line);
-        group.add(handle);
+
+        // only add the handles to the zoom view
+        // we built them for the overview, but don't show them because it's crowded
+        if(overView) {
+          group.add(handle);
+        }
         return group;
     };
 };
