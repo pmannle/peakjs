@@ -18895,11 +18895,11 @@
             p = p < 0 ? 0 : p > that.pixelLength - that.width ? that.pixelLength - that.width : p;
             that.updateZoomWaveform(p);
           });
-          that.stage.on('mouseup', function () {
+          that.stage.on('mouseup mouseleave', function () {
             if (peaks.seeking) {
               that.peaks.emit('user_seek.zoomview', that.data.time(that.frameOffset + x), that.frameOffset + x);
             }
-            that.stage.off('mousemove mouseup');
+            that.stage.off('mousemove mouseup mouseleave');
             peaks.seeking = false;
           });
         }
