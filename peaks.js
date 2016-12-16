@@ -17965,13 +17965,17 @@
               };
             }
             var deleteIndex;
+            var deleteKey;
             var indexes = self.waveform.segments.segments.filter(fnFilter).map(function (segment, i) {
               deleteIndex = self.waveform.segments.remove(segment);
+              deleteKey = segment.id;
               return i;
             }).sort(function (a, b) {
               return b - a;
             }).map(function (index) {
               self.waveform.segments.segments.splice(deleteIndex, 1);
+              delete self.waveform.waveformZoomView.data.segments[deleteKey];
+              delete self.waveform.waveformOverview.data.segments[deleteKey];
               return index;
             });
             self.waveform.segments.updateSegments();
