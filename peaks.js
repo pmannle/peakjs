@@ -18424,6 +18424,9 @@
 
       thisSeg.moveToTop();
 
+      var _segmentStartTime = segment.startTime;
+      var _segmentEndTime = segment.endTime;
+
       if (thisSeg.inMarker.getX() > 0) {
         var inOffset = thisSeg.view.frameOffset + thisSeg.inMarker.getX() + thisSeg.inMarker.getWidth();
         segment.startTime = thisSeg.view.data.time(inOffset);
@@ -18442,7 +18445,13 @@
         if (segment.endTime >= segment.limitRight) {
           segment.endTime = segment.limitRight;
         }
-        console.log('Limit reached');
+        //console.log('Limit reached');
+      }
+
+      // don't let segments be less then 5 seconds long
+      if (segment.endTime - segment.startTime < 5) {
+        segment.startTime = _segmentStartTime;
+        segment.endTime = _segmentEndTime;
       }
 
       peaks.emit('segments.dragged', segment);
@@ -18471,7 +18480,9 @@
       this.render();
     };
     this.createSegment = function (startTime, endTime, editable, color, labelText, selected, limitLeft, limitRight) {
-      var segmentId = 'segment' + self.segments.length;
+      // need unique id for segment
+      var segmentId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+      //var segmentId = 'segment' + self.segments.length;
       if (startTime >= 0 === false) {
         throw new TypeError('[waveform.segments.createSegment] startTime should be a positive value');
       }
