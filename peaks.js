@@ -17125,7 +17125,8 @@
       var max_value = 127;
 
       if (samples_per_pixel < scale){
-        throw new Error("Zoom level "+samples_per_pixel+" too low, minimum: "+scale);
+        // no zoom, so disable for now
+        // throw new Error("Zoom level "+samples_per_pixel+" too low, minimum: "+scale);
       }
 
       var where, prev_where, stop, value, last_input_index;
