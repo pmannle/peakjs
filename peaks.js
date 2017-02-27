@@ -17127,6 +17127,7 @@
       if (samples_per_pixel < scale){
         // no zoom, so disable for now
         // throw new Error("Zoom level "+samples_per_pixel+" too low, minimum: "+scale);
+        samples_per_pixel = scale;
       }
 
       var where, prev_where, stop, value, last_input_index;
