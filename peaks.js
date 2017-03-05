@@ -17929,6 +17929,7 @@
           if (Array.isArray(segments)) {
             segments.forEach(function (segment) {
               self.waveform.segments.createSegment(
+                  segment._id,
                   segment.startTime, segment.endTime,
                   segment.editable, segment.color,
                   segment.labelText, segment.selected,
@@ -17950,6 +17951,15 @@
             self.waveform.segments.updateSegments();
             return self.waveform.segments.segments.splice(index, 1).pop();
           },
+          removeById: function (segmentId) {
+            var index = self.waveform.segments.removeById(segmentId);
+            if (index === null) {
+              throw new RangeError('Unable to find the requested segment' + String(segment));
+            }
+            self.waveform.segments.updateSegments();
+            return self.waveform.segments.segments.splice(index, 1).pop();
+          },
+
           removeByTime: function (startTime, endTime) {
             endTime = typeof endTime === 'number' ? endTime : 0;
             var fnFilter;
@@ -17970,7 +17980,7 @@
             var deleteKey;
             var indexes = self.waveform.segments.segments.filter(fnFilter).map(function (segment, i) {
               deleteIndex = self.waveform.segments.remove(segment);
-              deleteKey = segment.id;
+              deleteKey = segment._id;
               return i;
             }).sort(function (a, b) {
               return b - a;
@@ -18012,7 +18022,7 @@
           },
           updateSegmentLimits: function (segmentId, limitLeft, limitRight) {
             self.waveform.segments.segments.forEach(function(segment, index) {
-              if (segment.id == segmentId) {
+              if (segment._id == segmentId) {
                 if (typeof (limitLeft) === 'number') { segment.limitLeft = limitLeft; }
                 if (typeof (limitRight) === 'number') { segment.limitRight = limitRight; }
               }
@@ -18139,7 +18149,7 @@
       opacity: 1,
       height: view.height,
     });
-    shape.sceneFunc(WaveShape.drawFunc.bind(shape, view, segmentData.id));
+    shape.sceneFunc(WaveShape.drawFunc.bind(shape, view, segmentData._id));
     return shape;
   };
   WaveShape.drawFunc = function WaveShapedrawFunc(view, segmentId, context) {
@@ -18298,7 +18308,7 @@
     });
     var createSegmentWaveform = function (segmentId, startTime, endTime, editable, color, labelText) {
       var segment = {
-        id: segmentId,
+        _id: segmentId,
         startTime: startTime,
         endTime: endTime,
         labelText: labelText || '',
@@ -18374,17 +18384,17 @@
       var peakZoomViewData = peaks.waveform.waveformZoomView.data;
 
 
-      if (_.isUndefined(peakWaveData.segments[segment.id])) {
+      if (_.isUndefined(peakWaveData.segments[segment._id])) {
         highlighted = false;
       } else {
-        highlighted = peakWaveData.segments[segment.id].highlighted;
+        highlighted = peakWaveData.segments[segment._id].highlighted;
         segment.overview.moveToTop();
         //segment.zoom.moveToTop();
 
       }
 
-      peakWaveData.set_segment(peakWaveData.at_time(segment.startTime), peakWaveData.at_time(segment.endTime), segment.id, highlighted);
-      peakZoomViewData.set_segment(peakZoomViewData.at_time(segment.startTime), peakZoomViewData.at_time(segment.endTime), segment.id, highlighted);
+      peakWaveData.set_segment(peakWaveData.at_time(segment.startTime), peakWaveData.at_time(segment.endTime), segment._id, highlighted);
+      peakZoomViewData.set_segment(peakZoomViewData.at_time(segment.startTime), peakZoomViewData.at_time(segment.endTime), segment._id, highlighted);
       var overviewStartOffset = peakWaveData.at_time(segment.startTime);
       var overviewEndOffset = peakWaveData.at_time(segment.endTime);
       segment.overview.setWidth(overviewEndOffset - overviewStartOffset);
@@ -18396,7 +18406,7 @@
         segment.overview.inMarker.label.setText(mixins.niceTime(segment.startTime, false));
         segment.overview.outMarker.label.setText(mixins.niceTime(segment.endTime, false));
       }
-      SegmentShape.update.call(segment.overview.waveformShape, peaks.waveform.waveformOverview, segment.id);
+      SegmentShape.update.call(segment.overview.waveformShape, peaks.waveform.waveformOverview, segment._id);
       var zoomStartOffset = peakZoomViewData.at_time(segment.startTime);
       var zoomEndOffset = peakZoomViewData.at_time(segment.endTime);
       var frameStartOffset = peaks.waveform.waveformZoomView.frameOffset;
@@ -18405,7 +18415,7 @@
         zoomStartOffset = frameStartOffset;
       if (zoomEndOffset > frameEndOffset)
         zoomEndOffset = frameEndOffset;
-      if (peakZoomViewData.segments[segment.id].visible) {
+      if (peakZoomViewData.segments[segment._id].visible) {
         var startPixel = zoomStartOffset - frameStartOffset;
         var endPixel = zoomEndOffset - frameStartOffset;
         segment.zoom.show();
@@ -18417,7 +18427,7 @@
           segment.zoom.inMarker.label.setText(mixins.niceTime(segment.startTime, false));
           segment.zoom.outMarker.label.setText(mixins.niceTime(segment.endTime, false));
         }
-        SegmentShape.update.call(segment.zoom.waveformShape, peaks.waveform.waveformZoomView, segment.id);
+        SegmentShape.update.call(segment.zoom.waveformShape, peaks.waveform.waveformZoomView, segment._id);
       } else {
         segment.zoom.hide();
       }
@@ -18481,9 +18491,14 @@
       this.segments.forEach(updateSegmentWaveform);
       this.render();
     };
-    this.createSegment = function (startTime, endTime, editable, color, labelText, selected, limitLeft, limitRight) {
+    this.createSegment = function (segmentId, startTime, endTime, editable, color, labelText, selected, limitLeft, limitRight) {
       // need unique id for segment
-      var segmentId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+      if(!segmentId) {
+        var segmentId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+      } else {
+        segmentId = segmentId;
+      }
+      
       //var segmentId = 'segment' + self.segments.length;
       if (startTime >= 0 === false) {
         throw new TypeError('[waveform.segments.createSegment] startTime should be a positive value');
@@ -18508,6 +18523,21 @@
       var index = null;
       this.segments.some(function (s, i) {
         if (s === segment) {
+          index = i;
+          return true;
+        }
+      });
+      if (typeof index === 'number') {
+        segment = this.segments[index];
+        segment.overview.destroy();
+        segment.zoom.destroy();
+      }
+      return index;
+    };
+    this.removeById = function removeSegmentById(segmentId) {
+      var index = null;
+      this.segments.forEach(function (s, i) {
+        if (s._id === segmentId) {
           index = i;
           return true;
         }
@@ -19114,7 +19144,7 @@
           //that.peaks.waveform.waveformZoomView.segmentLayer.children[0].moveToTop();
 
           (that.peaks.waveform.segments.segments).forEach(function(segment, index) {
-            if (that.peaks.waveform.segments.segments[index].id == key) {
+            if (that.peaks.waveform.segments.segments[index]._id == key) {
               segmentStartTime = segment.startTime;
               that.peaks.waveform.segments.segments[index].highlighted = segmentStartTime;
               segment.zoom.moveToTop();
@@ -19133,7 +19163,7 @@
           // hide highlight
           that.peaks.waveform.waveformOverview.data.segments[key].highlighted = false;
           (that.peaks.waveform.segments.segments).forEach(function(segment, index) {
-            if (that.peaks.waveform.segments.segments[index].id == key) {
+            if (that.peaks.waveform.segments.segments[index]._id == key) {
               that.peaks.waveform.segments.segments[index].highlighted = false
             }
           });
