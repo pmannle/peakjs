@@ -17953,6 +17953,8 @@
           },
           removeById: function (segmentId) {
             var index = self.waveform.segments.removeById(segmentId);
+            delete self.waveform.waveformZoomView.data.segments[segmentId];
+            delete self.waveform.waveformOverview.data.segments[segmentId];
             if (index === null) {
               throw new RangeError('Unable to find the requested segment' + String(segment));
             }
@@ -17998,7 +18000,7 @@
           },
 
 
-          getSegments: function (scopeSegments) {
+          getSegments: function (scopeSegments, callback) {
 
             // scope segments contains input from the UI we want to merge with
             // the segments array before returning
@@ -18018,7 +18020,8 @@
               });
             }
 
-            return self.waveform.segments.segments;
+            //return self.waveform.segments.segments;
+            callback(self.waveform.segments.segments);
           },
           updateSegmentLimits: function (segmentId, limitLeft, limitRight) {
             self.waveform.segments.segments.forEach(function(segment, index) {
@@ -18535,10 +18538,14 @@
       return index;
     };
     this.removeById = function removeSegmentById(segmentId) {
+      var _this = this;
       var index = null;
       this.segments.forEach(function (s, i) {
         if (s._id === segmentId) {
           index = i;
+          _this.views.forEach(function(view, i) {
+            delete view.data.segments[segmentId]
+          })
           return true;
         }
       });
