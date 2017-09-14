@@ -17927,13 +17927,14 @@
             }];
           }
           if (Array.isArray(segments)) {
-            segments.forEach(function (segment) {
+            segments.map(function (segment) {
               self.waveform.segments.createSegment(
                   segment._id,
                   segment.startTime, segment.endTime,
                   segment.editable, segment.color,
                   segment.labelText, segment.selected,
                   segment.limitLeft, segment.limitRight);
+              return segment;
             });
             self.waveform.segments.render();
           } else {
@@ -18006,17 +18007,18 @@
             // the segments array before returning
 
             if (scopeSegments) {
-              self.waveform.segments.segments.forEach(function (segment, index) {
+              self.waveform.segments.segments.map(function (segment, index) {
                 if (scopeSegments[index]) {  // this is a newly created segment, it wont' be in angular scope yet
                   for (var key in segment) {
                     if (key == 'selected' && scopeSegments[index].selected) {
                       segment.selected = scopeSegments[index].selected;
                     }
-                    if (key == 'labelText' && scopeSegments[index].labelText) {
+                    if (key == 'labelText' && scopeSegments[index].labelText && (segment.labelText === scopeSegments[index].labelText)) {
                       segment.labelText = scopeSegments[index].labelText;
                     }
                   }
                 }
+                return segment;
               });
             }
 
@@ -18024,11 +18026,12 @@
             callback(self.waveform.segments.segments);
           },
           updateSegmentLimits: function (segmentId, limitLeft, limitRight) {
-            self.waveform.segments.segments.forEach(function(segment, index) {
+            self.waveform.segments.segments.map(function(segment, index) {
               if (segment._id == segmentId) {
                 if (typeof (limitLeft) === 'number') { segment.limitLeft = limitLeft; }
                 if (typeof (limitRight) === 'number') { segment.limitRight = limitRight; }
               }
+              return segment;
             });
           }
         };
