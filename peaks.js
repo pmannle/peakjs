@@ -18008,11 +18008,13 @@
 
             if (scopeSegments) {
               self.waveform.segments.segments.map(function (segment, index) {
-                if (scopeSegments[index]) {  // this is a newly created segment, it wont' be in angular scope yet
+                if (scopeSegments[index]) {  
+                  // this is a newly created segment, it wont' be in angular scope yet
                   for (var key in segment) {
                     if (key == 'selected' && scopeSegments[index].selected) {
                       segment.selected = scopeSegments[index].selected;
                     }
+                    // Changing the segment label text with the correct label
                     if (key == 'labelText' && scopeSegments[index].labelText && (segment.labelText === scopeSegments[index].labelText)) {
                       segment.labelText = scopeSegments[index].labelText;
                     }
